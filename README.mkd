@@ -1,5 +1,7 @@
 [README in English](https://github.com/previm/previm/blob/master/README-en.mkd)
 
+## Previm with small hack for mathematics (see e.g. <https://github.com/previm/previm/pull/41>)
+
 ## Previm
 
 [![TravisCI](https://travis-ci.org/previm/previm.svg?branch=master)](https://travis-ci.org/previm/previm) [![AppVeyor](https://ci.appveyor.com/api/projects/status/r12pom6aaiom3kqy?svg=true)](https://ci.appveyor.com/project/mattn/previm)
