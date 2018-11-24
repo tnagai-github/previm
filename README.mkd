@@ -1,6 +1,7 @@
 [README in English](https://github.com/previm/previm/blob/master/README-en.mkd)
 
-## Previm with small hack for mathematics (see e.g. <https://github.com/previm/previm/pull/41>)
+## Previm with small hack for mathematics 
+- based on the discussion <https://github.com/previm/previm/pull/41> etc. 
 
 ## Previm
 
