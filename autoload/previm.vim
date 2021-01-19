@@ -14,9 +14,12 @@ function! previm#open(preview_html_file) abort
   if exists('g:previm_open_cmd') && !empty(g:previm_open_cmd)
     if has('win32') && g:previm_open_cmd =~? 'firefox'
       " windows+firefox環境
-      call s:system(g:previm_open_cmd . ' "'  . substitute(a:preview_html_file,'\/','\\','g') . '"')
+      call s:system(g:previm_open_cmd . ' "file:///'  . fnamemodify(a:preview_html_file, ':p:gs?\\?/?g') . '"')
     elseif has('win32unix')
       call s:system(g:previm_open_cmd . ' '''  . system('cygpath -w ' . a:preview_html_file) . '''')
+    elseif get(g:, 'previm_wsl_mode', 0) ==# 1
+      let l:wsl_file_path = system('wslpath -w ' . a:preview_html_file)
+      call s:system(g:previm_open_cmd . " 'file:///" . fnamemodify(l:wsl_file_path, ':gs?\\?\/?') . '''')
     else
       call s:system(g:previm_open_cmd . ' '''  . a:preview_html_file . '''')
     endif
@@ -90,7 +93,7 @@ endfunction
 
 let s:base_dir = fnamemodify(expand('<sfile>:p:h') . '/../preview', ':p')
 
-function! s:preview_directory()
+function! s:preview_directory() abort
   return s:base_dir . sha256(expand('%:p'))[:15] . '-' . getpid()
 endfunction
 
@@ -103,7 +106,10 @@ function! previm#make_preview_file_path(path) abort
       call mkdir(dir, 'p')
     endif
 
-    exe printf("au VimLeave * call previm#cleanup_preview('%s')", dir)
+    augroup PrevimCleanup
+      au!
+      exe printf("au VimLeave * call previm#cleanup_preview('%s')", dir)
+    augroup END
     if filereadable(src)
       call s:File.copy(src, dst)
     endif
@@ -111,9 +117,12 @@ function! previm#make_preview_file_path(path) abort
   return dst
 endfunction
 
-function! previm#cleanup_preview(dir)
+function! previm#cleanup_preview(dir) abort
   if isdirectory(a:dir)
-    call s:File.rmdir(a:dir, 'r')
+    try
+      call s:File.rmdir(a:dir, 'r')
+    catch
+    endtry
   endif
 endfunction
 
@@ -142,6 +151,9 @@ function! s:function_template() abort
       \ '',
       \ 'function getContent() {',
       \ printf('return "%s";', previm#convert_to_content(getline(1, '$'))),
+      \ '}',
+      \ 'function getOptions() {',
+      \ printf('return %s;', previm#options()),
       \ '}',
       \], s:newline_character)
 endfunction
@@ -212,11 +224,16 @@ function! previm#convert_to_content(lines) abort
   for line in s:do_external_parse(a:lines)
     " TODO エスケープの理由と順番の依存度が複雑
     let escaped = substitute(line, '\', '\\\\', 'g')
-    let escaped = previm#relative_to_absolute_imgpath(escaped, mkd_dir)
+    let escaped = previm#convert_relative_to_absolute_imgpath(escaped, mkd_dir)
     let escaped = substitute(escaped, '"', '\\"', 'g')
+    let escaped = substitute(escaped, '\r', '\\r', 'g')
     call add(converted_lines, escaped)
   endfor
   return join(converted_lines, "\\n")
+endfunction
+
+function! previm#convert_relative_to_absolute_imgpath(text, mkd_dir) abort
+  return substitute(a:text, '!\[[^\]]*\]([^)]*)', '\=previm#relative_to_absolute_imgpath(submatch(0), a:mkd_dir)', 'g')
 endfunction
 
 " convert example
@@ -292,7 +309,7 @@ endfunction
 
 function! s:is_absolute_path(path) abort
   if has('win32')
-    return tolower(substitute(a:path, '\', '/', 'g')) =~ '^/\|^[a-z]:/'
+    return tolower(substitute(a:path, '\', '/', 'g')) =~# '^/\|^[a-z]:/'
   endif
   return a:path =~ '^/'
 endfunction
@@ -311,6 +328,15 @@ function! previm#wipe_cache()
   for path in filter(split(globpath(s:base_dir, '*'), "\n"), 'isdirectory(v:val) && v:val !~ "_$"')
     call previm#cleanup_preview(path)
   endfor
+endfunction
+
+function! previm#options()
+  if !exists('*json_encode')
+    return '{}'
+  endif
+  return json_encode({
+  \   'plantuml_imageprefix': get(g:, 'previm_plantuml_imageprefix', v:null)
+  \ })
 endfunction
 
 let &cpo = s:save_cpo

@@ -54,16 +54,6 @@ Markdownの場合を例とします。他の形式についても基本的な操
 4. 元のVimバッファに戻り編集を続けます。
 5. 変更の度にブラウザの表示内容が更新されます。
 
-注意:拡張子が`.md`の場合は`markdown`ではなく`modula2`として認識されてしまいます。
-その場合は以下の設定を.vimrcに記述してください
-
-
-	" .vimrc
-	augroup PrevimSettings
-	  autocmd!
-	  autocmd BufNewFile,BufRead *.{md,mdwn,mkd,mkdn,mark*} set filetype=markdown
-	augroup END
-
 ==============================================================================
 コマンド						*previm-command*
 
@@ -93,10 +83,14 @@ g:previm_open_cmd					*g:previm_open_cmd*
 	いない場合はopenbrowser#openを試みます。
 	|previm-openbrowser| も参照してください。
 
-	以下の設定例は、MacにてFirefoxで開く場合です。
+	以下の設定例は、MacにてFirefox, Google Chromeで開く場合です。
 >
 	" .vimrc
+        # open with FireFox
 	let g:previm_open_cmd = 'open -a Firefox'
+
+        # open with Google Chrome
+        let g:previm_open_cmd = 'open -a Google\ Chrome'
 <
 
 g:previm_enable_realtime			*g:previm_enable_realtime*
@@ -157,6 +151,17 @@ g:previm_show_header					*g:previm_show_header*
 >
 	" .vimrc
 	let g:previm_show_header = 0
+
+g:previm_plantuml_imageprefix			*g:previm_plantuml_imageprefix*
+	型:文字列
+
+	plantuml をローカルサーバで使用する場合のエンドポイントを指定します。
+
+	未指定の場合は http://plantuml.com/plantuml/img/ が使われます。
+
+>
+	" .vimrc
+	let g:previm_plantuml_imageprefix = 'http://localhost:8888/plantuml/img'
 
 
 ==============================================================================
